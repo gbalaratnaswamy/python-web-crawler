@@ -1,6 +1,6 @@
 # web crawler
 This is my first web crawler.  
-Things to learn before starting project
+Things to learn before starting project :
 - [x] python
 - [ ] database(any)
 - [ ] json
