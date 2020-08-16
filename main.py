@@ -1,9 +1,4 @@
 import pandas as pd
 import sys
-try:
-    command=sys.argv[1]
-except IndexError:
-    command=None 
-if command!=None:
-
-    print("you have entered",command)
+from secrets.mongodbfiles import getconnection  # connect to mongodb get secret sting
+print(getconnection())
