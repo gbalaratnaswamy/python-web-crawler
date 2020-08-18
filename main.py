@@ -1,6 +1,3 @@
-import pandas as pd
-import sys
-import re
 import requests
 from bs4 import BeautifulSoup
 from pymongo import MongoClient
