@@ -249,7 +249,7 @@ def handel_html(url,html_text,http_status,collection,content_type,content_length
     file_name+=".html"
     file_name=write_to_file(file_name,html_text)
     if new:
-        update_collection_old(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
+        update_collection(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
     else :
         update_collection_old(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
     # print(url,"is sucessfully crawled and data updated")
@@ -280,7 +280,7 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
                 update_collection_old(url,collection,http_status=http_status)
             continue
         try:
-            content_length=headers['content-length']
+            content_length=int(headers['content-length'])
         # if content length not present
         except KeyError:
             content_length=len(html_text)
@@ -303,7 +303,7 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
 
 
 # constants
-MAX_DATA_LIMIT=5000
+MAX_DATA_LIMIT=5000000
 CRAWL_AFTER=datetime(2020,8,2)-datetime(2020,8,1)
 DELAY_TIME=5
 
