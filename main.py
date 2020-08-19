@@ -5,7 +5,23 @@ from datetime import datetime
 import string
 import random
 import time
+import threading
 
+# multithreading work
+class thread_crawl(threading.Thread):
+    def __init__(self, thread_id,data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=True):
+        threading.Thread.__init__(self)
+        self.thread_id=thread_id
+        self.data_list=data_list
+        self.DELAY_TIME=DELAY_TIME
+        self.CRAWL_AFTER=CRAWL_AFTER
+        self.MAX_DATA_LIMIT=MAX_DATA_LIMIT
+        self.collection=collection
+        self.new=new
+    def run(self):
+        crawl_data(self.data_list,self.DELAY_TIME,self.CRAWL_AFTER,self.MAX_DATA_LIMIT,self.collection,self.new)
+
+        
 # function to save files
 def write_to_file(file_name,html_text):
     try:
@@ -15,7 +31,7 @@ def write_to_file(file_name,html_text):
         file_name=None
     return file_name
 
-# function to update collection
+# function to update collection with changing created at
 def update_collection(url,collection, http_status=None,content_length=None,content_type=None,file_name=None):
     collection.update_one({"link":url},{"$set":{"is_crawled":True,
                                                 "last_crawl_dt":datetime.now(),
@@ -48,7 +64,7 @@ def generate_random_string():
     file_name = ''.join(random.choice(ascii_letters) for i in range(10))
     return file_name
 
-#
+# handel content type of applications
 def handel_applications(content_type):
     file_name=generate_random_string()
     if content_type[11:]=="/pdf":
@@ -90,7 +106,7 @@ def handel_applications(content_type):
         file_name=None
     return file_name
 
-
+# handel content type of audio
 def handel_audio(content_type):
     file_name=generate_random_string()
     if content_type[5:]=="/acc":
@@ -111,7 +127,7 @@ def handel_audio(content_type):
         file_name=None
     return file_name
 
-
+# handel content type of text
 def handel_text(content_type):
     file_name=generate_random_string()
     if content_type[4:]=="/plain":
@@ -131,6 +147,7 @@ def handel_text(content_type):
         file_name=None
     return file_name
 
+# hadel types other than html
 def other_content_types(url,collection,http_status,content_length,content_type,new=True):
      # if it is application
     if content_type[:11]=="application":
@@ -158,6 +175,7 @@ def other_content_types(url,collection,http_status,content_length,content_type,n
         else:
             update_collection_old(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
 
+#handel html
 def handel_html(url,html_text,http_status,collection,content_type,content_length,new=True):
     soup=BeautifulSoup(html_text,'html.parser')
     a_tags=soup.find_all("a")
@@ -189,6 +207,7 @@ def handel_html(url,html_text,http_status,collection,content_type,content_length
     else :
         update_collection_old(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
     # print(url,"is sucessfully crawled and data updated")
+
 
 def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=True):
     for data in data_list:
@@ -234,13 +253,11 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
         # if data limit exceed
         if collection.count_documents({})>MAX_DATA_LIMIT:
             print("data limit exceed")
-            while collection.count_documents({})>MAX_DATA_LIMIT:
-                time.sleep(10)  # wait for 10 sec in expecting data was cleaned by user
-                pass
+            return
 
 
 # constants
-MAX_DATA_LIMIT=500
+MAX_DATA_LIMIT=5000
 CRAWL_AFTER=datetime(2020,8,2)-datetime(2020,8,1)
 DELAY_TIME=5
 
@@ -265,10 +282,50 @@ collection.insert_one(initial_data)
 # start crawler 
 while True:
     # crawl for not crawled links
-    not_crawled_data=collection.find({"is_crawled":False})
-    crawl_data(not_crawled_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
-
+    not_crawled_data=list(collection.find({"is_crawled":False}))
+    # if data is very less then no point of multithreading
+    len_of_data=len(not_crawled_data)
+    if len_of_data<5:
+        crawl_data(not_crawled_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
+    # multithread work
+    else :
+        thread_dividing=int(len_of_data/5)
+        thread1=thread_crawl(1,not_crawled_data[:thread_dividing],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
+        thread2=thread_crawl(2,not_crawled_data[thread_dividing:thread_dividing*2],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
+        thread3=thread_crawl(3,not_crawled_data[thread_dividing*2:thread_dividing*3],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
+        thread4=thread_crawl(4,not_crawled_data[thread_dividing*3:thread_dividing*4],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
+        thread5=thread_crawl(5,not_crawled_data[thread_dividing*4:],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
+        thread1.start()
+        thread2.start()
+        thread3.start()
+        thread4.start()
+        thread5.start()
+        while thread1.isAlive() or thread2.isAlive() or thread3.isAlive() or thread4.isAlive() or thread5.isAlive():
+            time.sleep(1)  # wait for one second and check again if threads are complete
+    if collection.count_documents({})>MAX_DATA_LIMIT:
+        print("data limit exceed from main thread")
+        while collection.count_documents({})>MAX_DATA_LIMIT:
+            time.sleep(10)  # wait for 10 sec in expecting data was cleaned by user
     # crawl for data that donot crawled for last one day
     daybefore=datetime.now()-CRAWL_AFTER
-    old_data=collection.find({"is_crawled":{"$lt":daybefore}})
-    crawl_data(old_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=False)
+    old_data=list(collection.find({"is_crawled":{"$lt":daybefore}}))
+    if len(old_data)<5:
+        crawl_data(old_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=False)
+    else :
+        thread_dividing=int(len_of_data/5)
+        thread1=thread_crawl(1,old_data[:thread_dividing],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
+        thread2=thread_crawl(2,old_data[thread_dividing:thread_dividing*2],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
+        thread3=thread_crawl(3,old_data[thread_dividing*2:thread_dividing*3],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
+        thread4=thread_crawl(4,old_data[thread_dividing*3:thread_dividing*4],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
+        thread5=thread_crawl(5,old_data[thread_dividing*4:],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
+        thread1.start()
+        thread2.start()
+        thread3.start()
+        thread4.start()
+        thread5.start()
+        while thread1.isAlive() or thread2.isAlive() or thread3.isAlive() or thread4.isAlive() or thread5.isAlive():
+            time.sleep(1)  # wait for one second to check again if threads work is complete
+    if collection.count_documents({})>MAX_DATA_LIMIT:
+        print("data limit exceed from main thread")
+        while collection.count_documents({})>MAX_DATA_LIMIT:
+            time.sleep(10)  # wait for 10 sec in expecting data was cleaned by user
