@@ -25,7 +25,7 @@ class thread_crawl(threading.Thread):
 # function to save files
 def write_to_file(file_name,html_text):
     try:
-        with open("files/"+file_name,"w") as f:
+        with open("files/"+file_name,"wb") as f:
             f.write(html_text)
     except UnicodeEncodeError:
         file_name=None
@@ -148,8 +148,9 @@ def handel_text(content_type):
     return file_name
 
 # hadel types other than html
-def other_content_types(url,collection,http_status,content_length,content_type,new=True):
+def other_content_types(url,collection,http_status,content_length,content_type,html_text,new=True):
      # if it is application
+    file_name=None
     if content_type[:11]=="application":
         file_name=handel_applications(content_type)
     # if content type is audio
@@ -175,7 +176,7 @@ def other_content_types(url,collection,http_status,content_length,content_type,n
         else:
             update_collection_old(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
 
-#handel html
+# handel html
 def handel_html(url,html_text,http_status,collection,content_type,content_length,new=True):
     soup=BeautifulSoup(html_text,'html.parser')
     a_tags=soup.find_all("a")
@@ -240,14 +241,14 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
             content_length=len(html_text)
         content_type=headers['content-type'].split(";")
         content_type=content_type[0]
-        # print(content_type)
-        
+        # setting html to content for easy wirting without errors
+        html_text=resp.content
         # if responce is html then crawl as only html contains links
         if content_type=="text/html":
             handel_html(url,html_text,http_status,collection,content_type,content_length,new)
         # if responce is not html then 
         else :
-            other_content_types(url,collection,http_status,content_length,content_type)
+            other_content_types(url,collection,http_status,content_length,content_type,html_text)
         time.sleep(DELAY_TIME)
 
         # if data limit exceed
@@ -268,7 +269,7 @@ db.webcrawler.drop()
 collection=db['webcrawler']
 
 # initially adding root url to data
-initial_data={"link":"http://flinkhub.com", 
+initial_data={"link":"http://www.pdf995.com/samples/pdf.pdf", 
             "source_link":"rooturl", 
             "is_crawled":False,
             "last_crawl_dt":None, 
