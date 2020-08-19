@@ -133,19 +133,64 @@ def handel_text(content_type):
     if content_type[4:]=="/plain":
         temp=url.split(".")
         file_name+="."+temp[-1]
-    elif content_type[:4]=="/xml":
+    elif content_type[4:]=="/xml":
         file_name+=".xml"
-    elif content_type[:4]=="/javascript":
+    elif content_type[4:]=="/javascript":
         file_name+=".xml"
-    elif content_type[:4]=="/csv":
+    elif content_type[4:]=="/csv":
         file_name+=".xml"
-    elif content_type[:4]=="/css":
+    elif content_type[4:]=="/css":
         file_name+=".xml"
-    elif content_type[:4]=="/css":
+    elif content_type[4:]=="/css":
         file_name+=".xml"
     else :
         file_name=None
     return file_name
+
+# 
+def handel_image(content_type):
+    file_name=generate_random_string()
+    if content_type[5:]=="/vnd.microsoft.icon":
+        file_name+=".ico"
+    elif content_type[5:]=="/jpeg":
+        file_name+=".jpg"
+    elif content_type[5:]=="/bmp":
+        file_name+=".bmp"
+    elif content_type[5:]=="/gif":
+        file_name+=".gif"
+    elif content_type[5:]=="/png":
+        file_name+=".png"
+    elif content_type[5:]=="/svg+xml":
+        file_name+=".svg"
+    elif content_type[5:]=="/tiff":
+        file_name+=".tiff"
+    elif content_type[5:]=="/webp":
+        file_name+=".webp"
+    else :
+        file_name=None
+    return file_name
+    
+# handel videos
+def handel_video(content_type):
+    file_name=generate_random_string()
+    if content_type[5:]=="/x-msvideo":
+        file_name+=".avi"
+    elif content_type[5:]=="/mpeg":
+        file_name+=".mpeg"
+    elif content_type[5:]=="/ogg":
+        file_name+=".ogv"
+    elif content_type[5:]=="/mp2t":
+        file_name+=".ts"
+    elif content_type[5:]=="/webm":
+        file_name+=".webm"
+    elif content_type[5:]=="/3gpp":
+        file_name+=".3gp"
+    elif content_type[5:]=="/3gpp2":
+        file_name+=".3g2"
+    else :
+        file_name=None
+    return file_name
+    
 
 # hadel types other than html
 def other_content_types(url,collection,http_status,content_length,content_type,html_text,new=True):
@@ -227,7 +272,7 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
         http_status=resp.status_code
         headers=resp.headers
 
-        # if http status is grater than 400 implies client side error or server side errror
+        # if http status is grater than 400 implies client side error or server side error
         if http_status>=400:
             if new:
                 update_collection(url,collection,http_status=http_status)
@@ -269,7 +314,7 @@ db.webcrawler.drop()
 collection=db['webcrawler']
 
 # initially adding root url to data
-initial_data={"link":"http://www.pdf995.com/samples/pdf.pdf", 
+initial_data={"link":"https://en.wikipedia.org/wiki/Main_Page", 
             "source_link":"rooturl", 
             "is_crawled":False,
             "last_crawl_dt":None, 
