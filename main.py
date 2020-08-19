@@ -21,7 +21,30 @@ class thread_crawl(threading.Thread):
     def run(self):
         crawl_data(self.data_list,self.DELAY_TIME,self.CRAWL_AFTER,self.MAX_DATA_LIMIT,self.collection,self.new)
 
-        
+class start_threads:
+    def __init__(self,data_list,collection,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,NO_OF_THREADS=5,new=True):
+        self.collection=collection
+        self.data_list=data_list
+        self.DELAY_TIME=DELAY_TIME
+        self.CRAWL_AFTER=CRAWL_AFTER
+        self.MAX_DATA_LIMIT=MAX_DATA_LIMIT
+        self.NO_OF_THREADS=NO_OF_THREADS
+        self.new=new
+        self.threads={}
+    def start(self):
+        len_of_data=len(self.data_list)
+        thread_dividing=int(len_of_data/self.NO_OF_THREADS)
+        for i in range(self.NO_OF_THREADS):
+            self.threads[i]=thread_crawl(1,self.data_list[thread_dividing*i:thread_dividing*(i+1)],self.DELAY_TIME,self.CRAWL_AFTER,self.MAX_DATA_LIMIT,self.collection,self.new)
+        for i in range(self.NO_OF_THREADS):
+            self.threads[i].start()
+    def is_not_complete(self):
+        for i in range(self.NO_OF_THREADS):
+            if self.threads[i].isAlive():
+                return True
+            return False
+
+
 # function to save files
 def write_to_file(file_name,html_text):
     try:
@@ -255,6 +278,8 @@ def handel_html(url,html_text,http_status,collection,content_type,content_length
     # print(url,"is sucessfully crawled and data updated")
 
 
+
+
 def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=True):
     for data in data_list:
         url=data['link']
@@ -303,7 +328,7 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
 
 
 # constants
-MAX_DATA_LIMIT=5000000
+MAX_DATA_LIMIT=5000
 CRAWL_AFTER=datetime(2020,8,2)-datetime(2020,8,1)
 DELAY_TIME=5
 
@@ -335,18 +360,9 @@ while True:
         crawl_data(not_crawled_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
     # multithread work
     else :
-        thread_dividing=int(len_of_data/5)
-        thread1=thread_crawl(1,not_crawled_data[:thread_dividing],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
-        thread2=thread_crawl(2,not_crawled_data[thread_dividing:thread_dividing*2],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
-        thread3=thread_crawl(3,not_crawled_data[thread_dividing*2:thread_dividing*3],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
-        thread4=thread_crawl(4,not_crawled_data[thread_dividing*3:thread_dividing*4],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
-        thread5=thread_crawl(5,not_crawled_data[thread_dividing*4:],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
-        thread1.start()
-        thread2.start()
-        thread3.start()
-        thread4.start()
-        thread5.start()
-        while thread1.isAlive() or thread2.isAlive() or thread3.isAlive() or thread4.isAlive() or thread5.isAlive():
+        mythread= start_threads(data_list=not_crawled_data,collection=collection,DELAY_TIME=DELAY_TIME,CRAWL_AFTER=CRAWL_AFTER,MAX_DATA_LIMIT=MAX_DATA_LIMIT,NO_OF_THREADS=5)
+        mythread.start()
+        while mythread.is_not_complete():
             time.sleep(1)  # wait for one second and check again if threads are complete
     if collection.count_documents({})>MAX_DATA_LIMIT:
         print("data limit exceed from main thread")
@@ -358,19 +374,10 @@ while True:
     if len(old_data)<5:
         crawl_data(old_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=False)
     else :
-        thread_dividing=int(len_of_data/5)
-        thread1=thread_crawl(1,old_data[:thread_dividing],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
-        thread2=thread_crawl(2,old_data[thread_dividing:thread_dividing*2],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
-        thread3=thread_crawl(3,old_data[thread_dividing*2:thread_dividing*3],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
-        thread4=thread_crawl(4,old_data[thread_dividing*3:thread_dividing*4],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
-        thread5=thread_crawl(5,old_data[thread_dividing*4:],DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,False)
-        thread1.start()
-        thread2.start()
-        thread3.start()
-        thread4.start()
-        thread5.start()
-        while thread1.isAlive() or thread2.isAlive() or thread3.isAlive() or thread4.isAlive() or thread5.isAlive():
-            time.sleep(1)  # wait for one second to check again if threads work is complete
+        mythread= start_threads(data_list=old_data,collection=collection,DELAY_TIME=DELAY_TIME,CRAWL_AFTER=CRAWL_AFTER,MAX_DATA_LIMIT=MAX_DATA_LIMIT,NO_OF_THREADS=5,new=False)
+        mythread.start()
+        while mythread.is_not_complete():
+            time.sleep(1)  # wait for one second and check again if threads are complete
     if collection.count_documents({})>MAX_DATA_LIMIT:
         print("data limit exceed from main thread")
         while collection.count_documents({})>MAX_DATA_LIMIT:
