@@ -1,3 +1,5 @@
+#
+
 import requests
 from bs4 import BeautifulSoup
 from pymongo import MongoClient
@@ -7,7 +9,7 @@ import random
 import time
 import threading
 
-# multithreading work
+# creating thread class to use with threading library
 class thread_crawl(threading.Thread):
     def __init__(self, thread_id,data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=True):
         threading.Thread.__init__(self)
@@ -21,6 +23,7 @@ class thread_crawl(threading.Thread):
     def run(self):
         crawl_data(self.data_list,self.DELAY_TIME,self.CRAWL_AFTER,self.MAX_DATA_LIMIT,self.collection,self.new)
 
+# creating and handling threads
 class start_threads:
     def __init__(self,data_list,collection,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,NO_OF_THREADS=5,new=True):
         self.collection=collection
@@ -54,7 +57,7 @@ def write_to_file(file_name,html_text):
         file_name=None
     return file_name
 
-# function to update collection with changing created at
+# function to update collection with changing created at(for updating not crawled data)
 def update_collection(url,collection, http_status=None,content_length=None,content_type=None,file_name=None):
     collection.update_one({"link":url},{"$set":{"is_crawled":True,
                                                 "last_crawl_dt":datetime.now(),
@@ -64,7 +67,7 @@ def update_collection(url,collection, http_status=None,content_length=None,conte
                                                 "file_path":file_name,
                                                 "created_at":datetime.now()}})
 
-# function to update collection without changing created at
+# function to update collection without changing created at(for updating old data)
 def update_collection_old(url,collection, http_status=None,content_length=None,content_type=None,file_name=None):
     collection.update_one({"link":url},{"$set":{"is_crawled":True,
                                                 "last_crawl_dt":datetime.now(),
@@ -73,7 +76,7 @@ def update_collection_old(url,collection, http_status=None,content_length=None,c
                                                 "content_length":content_length,
                                                 "file_path":file_name}})
 
-# function to create new link
+# function to create new link during crawling
 def create_new_link(url,link,collection):
     collection.insert_one({"link":link, "source_link":url, 
                             "is_crawled":False,"last_crawl_dt":None, 
@@ -170,7 +173,7 @@ def handel_text(content_type):
         file_name=None
     return file_name
 
-# 
+# handel content of type image
 def handel_image(content_type):
     file_name=generate_random_string()
     if content_type[5:]=="/vnd.microsoft.icon":
@@ -217,10 +220,12 @@ def handel_video(content_type):
 
 # hadel types other than html
 def other_content_types(url,collection,http_status,content_length,content_type,html_text,new=True):
-     # if it is application
     file_name=None
+
+    # if it is application
     if content_type[:11]=="application":
         file_name=handel_applications(content_type)
+        
     # if content type is audio
     elif content_type[:5]=="audio":
         file_name=handel_audio(content_type)
@@ -239,6 +244,7 @@ def other_content_types(url,collection,http_status,content_length,content_type,h
     
     if file_name!=None:
         file_name=write_to_file(file_name,html_text)
+        # for updating not crawled data new is true and for crawling old data new is false
         if new:
             update_collection(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
         else:
@@ -252,7 +258,7 @@ def handel_html(url,html_text,http_status,collection,content_type,content_length
         link=tag.get("href")
         # clean link
         try :
-            # if link is not http or starts with / it is not valid
+            # if link is not http(or https) or starts with / it is not valid
             if link[:4]!="http" and link[0]!="/":
                 # print(link,"is not a valid link")
                 continue
@@ -268,18 +274,19 @@ def handel_html(url,html_text,http_status,collection,content_type,content_length
         # if link not present in data base then add it
         if collection.find_one({"link":link})==None:
             create_new_link(url,link,collection)
+    
     file_name=generate_random_string()
     file_name+=".html"
     file_name=write_to_file(file_name,html_text)
+    
+    # for updating not crawled data new is true and for crawling old data new is false
     if new:
         update_collection(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
     else :
         update_collection_old(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
     # print(url,"is sucessfully crawled and data updated")
 
-
-
-
+# crawl data
 def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=True):
     for data in data_list:
         url=data['link']
@@ -287,8 +294,10 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
             resp=requests.get(url)
         # network error then marked as crawled and crawl after 24 hr
         except (requests.ConnectionError ,requests.ConnectTimeout ,requests.HTTPError):
+            # if new then update with changing created at from none to current date
             if new:
                 update_collection(url,collection)
+            # else do not update created at
             else :
                 update_collection_old(url,collection)
             continue
@@ -299,6 +308,7 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
 
         # if http status is grater than 400 implies client side error or server side error
         if http_status>=400:
+            # for updating not crawled data new is true and for crawling old data new is false
             if new:
                 update_collection(url,collection,http_status=http_status)
             else :
@@ -327,19 +337,21 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
             return
 
 
-# constants
+# defining constants
 MAX_DATA_LIMIT=5000
 CRAWL_AFTER=datetime(2020,8,2)-datetime(2020,8,1)
 DELAY_TIME=5
+ROOT_URL="https://en.wikipedia.org/wiki/Main_Page"
 
 # connecting to database and clearing previous data
 cluster=MongoClient(port=27017)
 db=cluster['webcrawler']
+# if webcrawler already present then drop(helpful during testing)
 db.webcrawler.drop()
 collection=db['webcrawler']
 
 # initially adding root url to data
-initial_data={"link":"https://en.wikipedia.org/wiki/Main_Page", 
+initial_data={"link":ROOT_URL,
             "source_link":"rooturl", 
             "is_crawled":False,
             "last_crawl_dt":None, 
@@ -354,7 +366,7 @@ collection.insert_one(initial_data)
 while True:
     # crawl for not crawled links
     not_crawled_data=list(collection.find({"is_crawled":False}))
-    # if data is very less then no point of multithreading
+    # if data is very less then no point of multithreading(i.e during first run only 1 data will be present)
     len_of_data=len(not_crawled_data)
     if len_of_data<5:
         crawl_data(not_crawled_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection)
@@ -362,12 +374,16 @@ while True:
     else :
         mythread= start_threads(data_list=not_crawled_data,collection=collection,DELAY_TIME=DELAY_TIME,CRAWL_AFTER=CRAWL_AFTER,MAX_DATA_LIMIT=MAX_DATA_LIMIT,NO_OF_THREADS=5)
         mythread.start()
+        # wait until all theads are completed
         while mythread.is_not_complete():
             time.sleep(1)  # wait for one second and check again if threads are complete
+
     if collection.count_documents({})>MAX_DATA_LIMIT:
         print("data limit exceed from main thread")
         while collection.count_documents({})>MAX_DATA_LIMIT:
             time.sleep(10)  # wait for 10 sec in expecting data was cleaned by user
+
+
     # crawl for data that donot crawled for last one day
     daybefore=datetime.now()-CRAWL_AFTER
     old_data=list(collection.find({"is_crawled":{"$lt":daybefore}}))
