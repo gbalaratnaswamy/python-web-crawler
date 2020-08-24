@@ -341,7 +341,7 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
 MAX_DATA_LIMIT=5000
 CRAWL_AFTER=datetime(2020,8,2)-datetime(2020,8,1)
 DELAY_TIME=5
-ROOT_URL="https://en.wikipedia.org/wiki/Main_Page"
+ROOT_URL="https://flinkhub.com"
 
 # connecting to database and clearing previous data
 cluster=MongoClient(port=27017)
