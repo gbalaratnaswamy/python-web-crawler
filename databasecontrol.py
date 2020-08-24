@@ -5,10 +5,10 @@ from cfg import *
 # connecting to database and clearing previous data
 cluster=MongoClient(port=27017)
 
-db=cluster[database_name]
+db=cluster[DATABASE_NAME]
 # if data is already present then drop(helpful during testing)
-db[collection_name].drop()
-collection=db[collection_name]
+db[COLLECTION_NAME].drop()
+collection=db[COLLECTION_NAME]
 # initially adding root url to data
 collection.insert_one({"link":ROOT_URL,
             "source_link":"rooturl", 
