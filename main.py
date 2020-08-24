@@ -386,7 +386,7 @@ while True:
 
     # crawl for data that donot crawled for last one day
     daybefore=datetime.now()-CRAWL_AFTER
-    old_data=list(collection.find({"is_crawled":{"$lt":daybefore}}))
+    old_data=list(collection.find({"last_crawl_dt":{"$lt":daybefore}}))
     if len(old_data)<5:
         crawl_data(old_data,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=False)
     else :
