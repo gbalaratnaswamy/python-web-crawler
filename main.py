@@ -302,7 +302,7 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
                 update_collection_old(url,collection)
             continue
         # obtain data
-        html_text=resp.text
+        html_text=resp.content
         http_status=resp.status_code
         headers=resp.headers
 
@@ -321,8 +321,6 @@ def crawl_data(data_list,DELAY_TIME,CRAWL_AFTER,MAX_DATA_LIMIT,collection,new=Tr
             content_length=len(html_text)
         content_type=headers['content-type'].split(";")
         content_type=content_type[0]
-        # setting html to content for easy wirting without errors
-        html_text=resp.content
         # if responce is html then crawl as only html contains links
         if content_type=="text/html":
             handel_html(url,html_text,http_status,collection,content_type,content_length,new)
