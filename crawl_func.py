@@ -53,8 +53,8 @@ def generate_random_string():
     file_name = ''.join(random.choice(ascii_letters) for i in range(10))
     return file_name
 
-# handel content type of applications
-def handel_applications(content_type):
+# handle content type of applications
+def handle_applications(content_type):
     file_name=generate_random_string()
     if content_type[11:]=="/pdf":
         file_name+=".pdf"
@@ -95,8 +95,8 @@ def handel_applications(content_type):
         file_name=None
     return file_name
 
-# handel content type of audio
-def handel_audio(content_type):
+# handle content type of audio
+def handle_audio(content_type):
     file_name=generate_random_string()
     if content_type[5:]=="/acc":
         file_name+=".acc"
@@ -116,8 +116,8 @@ def handel_audio(content_type):
         file_name=None
     return file_name
 
-# handel content type of text
-def handel_text(content_type,url):
+# handle content type of text
+def handle_text(content_type,url):
     file_name=generate_random_string()
     if content_type[4:]=="/plain":
         temp=url.split(".")
@@ -136,8 +136,8 @@ def handel_text(content_type,url):
         file_name=None
     return file_name
 
-# handel content of type image
-def handel_image(content_type):
+# handle content of type image
+def handle_image(content_type):
     file_name=generate_random_string()
     if content_type[5:]=="/vnd.microsoft.icon":
         file_name+=".ico"
@@ -159,8 +159,8 @@ def handel_image(content_type):
         file_name=None
     return file_name
     
-# handel videos
-def handel_video(content_type):
+# handle videos
+def handle_video(content_type):
     file_name=generate_random_string()
     if content_type[5:]=="/x-msvideo":
         file_name+=".avi"
@@ -187,23 +187,23 @@ def other_content_types(url,http_status,content_length,content_type,html_text,ne
 
     # if it is application
     if content_type[:11]=="application":
-        file_name=handel_applications(content_type)
+        file_name=handle_applications(content_type)
         
     # if content type is audio
     elif content_type[:5]=="audio":
-        file_name=handel_audio(content_type)
+        file_name=handle_audio(content_type)
     
     # if content type is text
     elif content_type[:4]=="text":
-        file_name=handel_text(content_type,url)
+        file_name=handle_text(content_type,url)
     
     # if content type is image
     elif content_type[:5]=="image":
-        file_name=handel_image(content_type)
+        file_name=handle_image(content_type)
     
     # if content type is video
     elif content_type[:5]=="video":
-        file_name=handel_video(content_type)
+        file_name=handle_video(content_type)
     
     if file_name!=None:
         file_name=write_to_file(file_name,html_text)
@@ -213,8 +213,8 @@ def other_content_types(url,http_status,content_length,content_type,html_text,ne
         else:
             update_collection_old(url=url,http_status=http_status,content_length=content_length,content_type=content_type,file_name=file_name,collection=collection)
 
-# handel html
-def handel_html(url,html_text,http_status,content_type,content_length,new=True):
+# handle html
+def handle_html(url,html_text,http_status,content_type,content_length,new=True):
     soup=BeautifulSoup(html_text,'html.parser')
     a_tags=soup.find_all("a")
     for tag in a_tags:
@@ -286,7 +286,7 @@ def crawl_data(data_list,new=True):
         content_type=content_type[0]
         # if responce is html then crawl as only html contains links
         if content_type=="text/html":
-            handel_html(url,html_text,http_status,content_type,content_length,new)
+            handle_html(url,html_text,http_status,content_type,content_length,new)
         # if responce is not html then 
         else :
             other_content_types(url,http_status,content_length,content_type,html_text)
