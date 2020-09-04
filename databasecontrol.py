@@ -3,7 +3,7 @@ from cfg import *
 
 
 # connecting to database and clearing previous data
-cluster=MongoClient(port=27017)
+cluster=MongoClient(port=MONGO_PORT)
 
 db=cluster[DATABASE_NAME]
 # if data is already present then drop(helpful during testing)

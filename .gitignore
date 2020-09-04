@@ -1,5 +1,7 @@
-/.vscode
+.vscode/
 code.code-workspace
-/files
+files
 test.py
-/__pycache__
+__pycache__/
+.venv/
+
